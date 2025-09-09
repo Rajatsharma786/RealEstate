@@ -1,0 +1,29 @@
+field_name,description
+property_id,Unique identifier for the property record.
+source_attribution,"Data sources contributing to this property (PropertyHub, HomeFinder, InvestorNet)."
+suburb,City/Suburb where the property is located in State.
+state,State or territory of the property (Australian).
+zip_code,Postal code corresponding to the property address.
+address,Street address (simulated).
+property_category,"Major category of property (Residential Single-Family, Condominium/Apartment, Rental Property, Commercial Property, Multi-Family Investment)."
+property_subtype,"Subtype classification (e.g., House, Townhome, Office)."
+transaction_type,"Indicates if the property is for sale, for rent, sold, pending, rented or available."
+listing_price,Listing price of the property (AUD).
+monthly_rent,Monthly rental rate for rental properties (AUD).
+price_per_sqft,Price per square foot calculated from listing price and living area.
+security_deposit,Security deposit required for rental properties (AUD).
+move_in_cost,Total move-in cost (deposit + first month) for rentals (AUD).
+total_sqft,Total square footage of the property.
+living_sqft,Living space square footage.
+lot_sqft,Lot size in square feet (if applicable).
+bedrooms,Number of bedrooms.
+bathrooms,Number of bathrooms.
+garage_spaces,Number of garage parking spaces.
+year_built,Year the property was originally built.
+property_status,"Current status of the listing (active, pending, sold, off-market, rented, available)."
+days_on_market,Number of days the property has been on the market.
+nearby_amenities,Key amenities near the property.
+lease_term,Lease term length for rentals.
+pet_policy,"Pet policy (allowed, restricted, not allowed)."
+parking_availability,Parking availability description.
+date_of_property_listed,Random date range of property being listed (YYYY-MM-DD).
