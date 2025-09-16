@@ -16,8 +16,10 @@ redis>=4.5.0
 pandas>=2.0.0
 numpy>=1.24.0
 
-# Embeddings
+# Embeddings - REQUIRED for HuggingFaceEmbeddings
 sentence-transformers>=2.2.0
+transformers>=4.21.0
+torch>=1.12.0
 
 # Email functionality
 reportlab>=4.0.0
@@ -28,18 +30,23 @@ streamlit>=1.28.0
 # Authentication
 PyJWT>=2.8.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
 python-multipart>=0.0.6
 
 # Environment and configuration
 python-dotenv>=1.0.0
 
-# Development and testing
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.0.0
+# Additional dependencies that might be missing
+setuptools>=65.0.0
+wheel>=0.38.0
 
-# Optional: Jupyter notebook support
-jupyter>=1.0.0
-ipython>=8.0.0
+# Development and testing (remove for production)
+# pytest>=7.0.0
+# pytest-asyncio>=0.21.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0
+
+# Optional: Jupyter notebook support (remove for production)
+# jupyter>=1.0.0
+# ipython>=8.0.0

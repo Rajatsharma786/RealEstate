@@ -30,7 +30,9 @@ class AuthManager:
         self.expiration_hours = config.auth.jwt_expiration_hours
         
         # Initialize database table
+        print("🏗️ Initializing database tables...")
         db_service.create_users_table()
+        db_service.create_properties_table_if_needed()
         
         # Create default admin user if it doesn't exist
         if not db_service.user_exists("admin"):

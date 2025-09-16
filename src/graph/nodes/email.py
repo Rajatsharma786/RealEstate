@@ -147,8 +147,19 @@ def node_email_report(state: State) -> State:
     # Get user's email from database using user_id
     to_addr = ""
     user_id = state.get("user_id", "")
+
+    print(f"DEBUG: Email node - User ID: {user_id}")
+    print(f"DEBUG: Email node - Question: {state.get('question', '')}")
+
+    question = state.get("question", "")
+    extracted_email = email_service._extract_email(question)
+    print(f"DEBUG: Email node - Extracted email from question: {extracted_email}")
+
+    if extracted_email:
+        to_addr = extracted_email
+        print(f"DEBUG: Email node - Using extracted email: {to_addr}")
     
-    if user_id:
+    elif user_id:
         try:
             # Import db_service to get user email
             from src.services.db.sql import db_service

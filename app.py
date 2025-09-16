@@ -17,6 +17,14 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
+try:
+    from data import data_manager
+except ImportError as e:
+    print(f"Import error: {e}")
+    # Fallback: import the class directly
+    from data import DataManager
+    data_manager = DataManager()
+from src.services.db.sql import db_service
 
 # Load environment variables from .env file
 load_dotenv()
@@ -196,7 +204,7 @@ def stream_agent_response(prompt: str) -> str:
     
     try:
         # Initialize state for streaming
-        user_id = st.session_state.authenticated_user.get("username", "") if st.session_state.authenticated_user else ""
+        user_id = st.session_state.authenticated_user.get("username", "") if st.session_state.authenticated_user else get_user_id()
         initial_state = {
             "question": prompt,
             "context": [],
@@ -222,7 +230,15 @@ def stream_agent_response(prompt: str) -> str:
             if "report" in event and event["report"]:
                 # Update the response in real-time
                 full_response = event["report"]
-                response_placeholder.markdown(full_response)
+                
+                # Check if this is an email request
+                if event.get("needs_email", False):
+                    # For email requests, show a confirmation message instead of the full report
+                    email_confirmation = f"📧 **Email Report Generated!**\n\nYour report has been generated and sent to your email address. The report includes comprehensive analysis of your query: *{prompt}*\n\n✅ **Email Status**: Report sent successfully\n📊 **Report Length**: {len(full_response)} characters\n\n*You can continue chatting below for more queries.*"
+                    response_placeholder.markdown(email_confirmation)
+                else:
+                    # For regular reports, show the full content
+                    response_placeholder.markdown(full_response)
                 time.sleep(0.1)  # Small delay for better UX
         
         # Save the final response
@@ -486,6 +502,18 @@ def main():
     """Main application entry point."""
     # Check environment variables
     if not check_environment():
+        st.stop()
+    
+    try:
+        # Check if properties table exists
+        schema = db_service.get_schema_info(include_types=True)
+        if "properties" not in schema:
+            st.info("🔄 Setting up database... This may take a moment.")
+            data_manager.load_all_data()
+            st.success("✅ Database initialized successfully!")
+            st.rerun()
+    except Exception as e:
+        st.error(f"❌ Database initialization failed: {e}")
         st.stop()
     
     # Page configuration

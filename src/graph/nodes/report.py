@@ -41,46 +41,94 @@ class ReportGenerationService:
         Returns:
             Generated report content
         """
-        # Detect email request from user's question
+        # Detect email request from user's question - more precise detection
         question = state.get("question", "")
-        needs_email = bool(re.search(r"\b(email|mail|send)\b", question, re.I))
+        # Look for explicit email requests with more specific patterns
+        email_patterns = [
+            r"\b(send|email|mail)\s+(me|to\s+me|the\s+report)\b",
+            r"\b(report|analysis|data)\s+(to\s+)?(my\s+)?email\b",
+            r"\bemail\s+(me|the\s+report|it)\b",
+            r"\bsend\s+(it|the\s+report|this)\s+(to\s+)?(my\s+)?email\b"
+        ]
+        needs_email = any(re.search(pattern, question, re.I) for pattern in email_patterns)
         print(f"DEBUG: Report node - Question: {question}")
         print(f"DEBUG: Report node - Email detection result: {needs_email}")
         
-        # Build system prompt
-        system_prompt = """You are a professional real estate analyst. Create a comprehensive, 
-                well-formatted report based on the property data provided by user query , 
-                property data results, and additional column context.
+        # Build system prompt - conditional based on email request
+        if needs_email:
+            system_prompt = """You are a professional real estate analyst. Create a comprehensive, 
+                    well-formatted report based on the property data provided by user query , 
+                    property data results, and additional column context.
 
-                ##Guidelines for your report:
-                - Start with a Tabular Data metrics.
-                - Highlight top 10 properties in a table if available
-                - Include key statistics (average prices, property counts, etc.)
-                - Highlight interesting trends or patterns
-                - Provide actionable insights for buyers/sellers
-                - Format data in tables or bullet points for readability
-                - Add relevant real estate context and market insights
+                    ##Guidelines for your report:
+                    - Start with a Tabular Data metrics.
+                    - Highlight top 10 properties in a table if available
+                    - Include key statistics (average prices, property counts, etc.)
+                    - Highlight interesting trends or patterns
+                    - Provide actionable insights for buyers/sellers
+                    - Format data in tables or bullet points for readability
+                    - Add relevant real estate context and market insights
 
-                **Ensure the report references the correct year based on the query results (e.g.,current year is 2025, last year is 2024)**
-                
-                **Suggest follow-up questions or additional searches**
+                    **Ensure the report references the correct year based on the query results (e.g.,current year is 2025, last year is 2024)**
+                    
+                    **Suggest follow-up questions or additional searches**
 
-                Make the report professional but accessible to general consumers.
-                
-                ## Guidelines for email:
-                If the user requested the report via email, format it as a concise email:
-                - Never say I'm unable to send emails.
-                - Start with a polite greeting
-                - Summarize key findings in the body.
-                - End with a courteous closing."""
+                    Make the report professional but accessible to general consumers.
+                    
+                    ## Guidelines for email:
+                    Since the user requested the report via email, format it as a concise email:
+                    - Never say I'm unable to send emails.
+                    - Start with a polite greeting
+                    - Summarize key findings in the body.
+                    - End with a courteous closing."""
+        else:
+            system_prompt = """You are a professional real estate analyst and helpful assistant. You can handle both real estate queries and general conversations.
+
+                                ## For Real Estate Queries:
+                                When the user asks about properties, market data, or real estate analysis:
+                                - Create a comprehensive, well-formatted report based on the property data provided
+                                - Start with Tabular Data metrics
+                                - Highlight top 10 properties in a table if available
+                                - Include key statistics (average prices, property counts, etc.)
+                                - Highlight interesting trends or patterns
+                                - Provide actionable insights for buyers/sellers
+                                - Format data in tables or bullet points for readability
+                                - Add relevant real estate context and market insights
+                                - Ensure the report references the correct year based on the query results (e.g., current year is 2025, last year is 2024)
+                                - Suggest follow-up questions or additional searches
+                                - Make the report professional but accessible to general consumers
+
+                                ## For General Questions (Greetings, Introductions, General Inquiries):
+                                When the user asks general questions like greetings, introductions, or "what can you do":
+                                - Respond in a friendly, professional manner
+                                - Introduce yourself as a Real Estate AI Assistant
+                                - Explain your capabilities: property analysis, market insights, data visualization, email reports
+                                - Provide examples of what you can help with
+                                - Keep responses concise and engaging
+                                - Guide users toward real estate-related questions when appropriate
+
+                                ## Examples of General Responses:
+                                - "Hello! I'm your Real Estate AI Assistant. I can help you analyze property data, find market insights, and generate comprehensive reports. What would you like to know about real estate?"
+                                - "I'm doing great! I'm here to help you with all your real estate needs. I can analyze property listings, provide market statistics, and even send detailed reports to your email. What can I help you with today?"
+                                - "I can help you with property analysis, market trends, price comparisons, and much more. Just ask me about properties in any area, and I'll provide detailed insights!"
+
+                                ## Guidelines for Email:
+                                If the user requested the report via email, format it as a concise email:
+                                - Never say I'm unable to send emails
+                                - Start with a polite greeting
+                                - Summarize key findings in the body
+                                - End with a courteous closing
+
+                                IMPORTANT: Do NOT format general conversations as emails. Only format real estate reports as emails when explicitly requested."""
         
         # Compose the LLM input
         llm_input = [{"role": "system", "content": system_prompt}] + state["messages"]
         
         if state.get("sql_result"):
+            context_str = "\n".join(state.get("context", [])) if isinstance(state.get("context"), list) else str(state.get("context", ""))
             llm_input.append({
                 "role": "system", 
-                "content": f"SQL result:\n{state['sql_result']} \nColumn context:{state['context']}"
+                "content": f"SQL result:\n{state['sql_result']} \nColumn context: {context_str}"
             })
         
         # Call the model
@@ -129,7 +177,14 @@ def node_report_writer(state: State) -> State:
         
         # Always check current question for email requests, don't use cached needs_email
         current_question = state.get("question", "")
-        needs_email = bool(re.search(r"\b(email|mail|send)\b", current_question, re.I))
+        # Use the same improved email detection logic
+        email_patterns = [
+            r"\b(send|email|mail)\s+(me|to\s+me|the\s+report)\b",
+            r"\b(report|analysis|data)\s+(to\s+)?(my\s+)?email\b",
+            r"\bemail\s+(me|the\s+report|it)\b",
+            r"\bsend\s+(it|the\s+report|this)\s+(to\s+)?(my\s+)?email\b"
+        ]
+        needs_email = any(re.search(pattern, current_question, re.I) for pattern in email_patterns)
         state["needs_email"] = needs_email
         state["email_state"] = needs_email
         

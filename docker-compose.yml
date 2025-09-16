@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: real-estate-postgres
+    environment:
+      - POSTGRES_DB=langchain
+      - POSTGRES_USER=langchain
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-langchain123}
+    ports:
+      - "6024:5432"  # Map to same port as your local setup
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langchain -d langchain"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - real-estate-network
+
+  # Redis for caching and conversation storage
+  redis:
+    image: redis:7-alpine
+    container_name: real-estate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - real-estate-network
+
+  # Main Real Estate Agent application
+  app:
+    build: .
+    container_name: real-estate-app
+    ports:
+      - "8501:8501"
+    environment:
+      # Database configuration
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=langchain
+      - DB_USER=langchain
+      - DB_PASSWORD=${DB_PASSWORD:-langchain}
+      
+      # Redis configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      
+      # OpenAI configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # LLM configuration
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.0}
+      - LLM_STREAMING=${LLM_STREAMING:-true}
+      
+      # Embedding configuration
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      
+      # Cache configuration
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      - CACHE_NAMESPACE=${CACHE_NAMESPACE:-real_estate}
+      
+      # Email configuration
+      - EMAIL_SENDER=${EMAIL_SENDER:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      
+      # Authentication configuration
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      
+      # Data file paths
+      - DATA_DICTIONARY_CSV=data/data_dictionary.csv
+      - PROPERTIES_CSV=data/properties_augmented_vic.csv
+      
+      # Streamlit configuration
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    volumes:
+      - ./data:/app/data:ro  # Mount data directory as read-only
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - real-estate-network
+    restart: unless-stopped
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  real-estate-network:
+    driver: bridge

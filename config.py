@@ -21,11 +21,14 @@ class DatabaseConfig:
     database: str = "langchain"
     username: str = "langchain"
     password: str = ""
+    sslmode: str = "prefer"
     
     @property
     def connection_string(self) -> str:
         """Get the PostgreSQL connection string."""
-        return f"postgresql+psycopg://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        ssl_param = f"?sslmode={self.sslmode}" if self.sslmode else ""
+        return f"postgresql+psycopg://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}{ssl_param}"
+        # return f"postgresql+psycopg://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 @dataclass
@@ -58,6 +61,13 @@ class RedisConfig:
     port: int = 6379
     db: int = 0
     password: Optional[str] = None
+    
+    def __post_init__(self):
+        """Update URL if individual components are provided."""
+        if self.host != "localhost" or self.password:
+            # Build URL from components
+            auth_part = f":{self.password}@" if self.password else ""
+            self.url = f"redis://{auth_part}{self.host}:{self.port}/{self.db}"
 
 
 @dataclass
@@ -110,7 +120,8 @@ def load_config() -> AppConfig:
         port=int(os.getenv("DB_PORT", "6024")),
         database=os.getenv("DB_NAME", "langchain"),
         username=os.getenv("DB_USER", "langchain"),
-        password=os.getenv("DB_PASSWORD", "")
+        password=os.getenv("DB_PASSWORD", ""),
+        sslmode=os.getenv("DB_SSLMODE", "prefer")
     )
     
     # LLM configuration

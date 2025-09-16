@@ -112,6 +112,35 @@ class DatabaseService:
             pass
         
         return result
+
+    def create_properties_table_if_needed(self) -> bool:
+        """Create the properties table and load data if it doesn't exist."""
+        try:
+            # Check if properties table exists by trying to query it
+            test_result = self.run_sql("SELECT COUNT(*) FROM properties LIMIT 1")
+            
+            if "error" in test_result.lower() or "relation" in test_result.lower():
+                print("📊 Properties table not found. Creating and loading data...")
+                
+                # Import data manager here to avoid circular imports
+                from data import DataManager
+                data_manager = DataManager()
+                
+                # Load the data
+                success = data_manager.setup_properties_table()
+                if success:
+                    print("✅ Properties table created and data loaded successfully")
+                    return True
+                else:
+                    print("❌ Failed to create properties table")
+                    return False
+            else:
+                print("✅ Properties table already exists")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Error checking/creating properties table: {e}")
+            return False
     
     def create_properties_table(self, df, table_name: str = "properties") -> None:
         """
