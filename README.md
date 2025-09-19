@@ -13,8 +13,8 @@ It converts natural-language questions into safe SQL queries, retrieves and anal
 
 ## Project Structure
 
-<img width="850" height="557" alt="image" src="https://github.com/user-attachments/assets/1de31d6e-41b2-4931-b436-7641777d80da" />
-<img width="839" height="509" alt="image" src="https://github.com/user-attachments/assets/25b957d2-20d6-47b8-9df1-92b76a2b5ced" />
+<img width="1536" height="869" alt="ChatGPT Image Sep 19, 2025, 01_23_03 PM" src="https://github.com/user-attachments/assets/c4cccd02-ee1d-4219-a740-959c7d7b327f" />
+
 
 ## Setup
 
