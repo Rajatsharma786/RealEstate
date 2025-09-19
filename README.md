@@ -12,9 +12,9 @@ It converts natural-language questions into safe SQL queries, retrieves and anal
 - **Secure auth** – JWT-based user authentication with an admin panel.
 
 ## Project Structure
-```
 
-```
+<img width="1536" height="869" alt="ChatGPT Image Sep 19, 2025, 01_23_03 PM" src="https://github.com/user-attachments/assets/c4cccd02-ee1d-4219-a740-959c7d7b327f" />
+
 
 ## Setup
 
