@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 
 import sys
 import os
+import re
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from config import config
@@ -69,9 +70,25 @@ def node_rewrite_query(state: State) -> State:
         Updated state with rewritten query
     """
     original_query = state.get("question", "")
-    rewritten_query = query_rewriting_service.rewrite_query(original_query)
+    email_patterns = [
+        r"\b(send|email|mail)\s+(me|to\s+me|the\s+report)\b",
+        r"\b(report|analysis|data)\s+(to\s+)?(my\s+)?email\b", 
+        r"\bemail\s+(me|the\s+report|it)\b",
+        r"\bsend\s+(it|the\s+report|this)\s+(to\s+)?(my\s+)?email\b"
+    ]
+    is_email_request = any(re.search(pattern, original_query, re.I) for pattern in email_patterns)
     
-    return {
-        **state,
-        "question": rewritten_query
-    }
+    if is_email_request:
+        # For email requests, don't rewrite the query - keep original for email detection
+        print(f"DEBUG: Rewrite node - Email request detected, keeping original query")
+        return {
+            **state,
+            "question": original_query  # Keep original query for email detection
+        }
+    else:
+        rewritten_query = query_rewriting_service.rewrite_query(original_query)
+        
+        return {
+            **state,
+            "question": rewritten_query
+        }

@@ -193,10 +193,9 @@ def display_messages():
 def stream_agent_response(prompt: str) -> str:
     """Stream the agent response and display it in real-time."""
     user_id = get_authenticated_user_id() or get_user_id()
+    print(f"DEBUG: App user_id: {user_id}")
     conversation_id = get_conversation_id()
-    
-    # Save user message
-    save_message("user", prompt)
+    print(f"DEBUG: App conversation_id: {conversation_id}")
     
     # Create a placeholder for the streaming response
     response_placeholder = st.empty()
@@ -205,6 +204,8 @@ def stream_agent_response(prompt: str) -> str:
     try:
         # Initialize state for streaming
         user_id = st.session_state.authenticated_user.get("username", "") if st.session_state.authenticated_user else get_user_id()
+        print(f"DEBUG: App final user_id: {user_id}")
+        
         initial_state = {
             "question": prompt,
             "context": [],
@@ -218,21 +219,37 @@ def stream_agent_response(prompt: str) -> str:
             "user_id": user_id
         }
         
+        print(f"DEBUG: App initial_state user_id: {initial_state['user_id']}")
+        
         # Stream the response
         from src.graph.workflow import app
         events = app.stream(
             initial_state,
-            {"thread_id": conversation_id, "recursion_limit": 150},
+            {"configurable": {"thread_id": conversation_id}, "recursion_limit": 150},
             stream_mode="values"
         )
         
-        for event in events:
+        print(f"DEBUG: App starting workflow with prompt: {prompt}")
+        
+        for i, event in enumerate(events):
+            print(f"DEBUG: App Event {i+1}: {list(event.keys())}")
+            
+            if "needs_email" in event:
+                print(f"DEBUG: App Event {i+1} needs_email: {event['needs_email']}")
+            
+            if "email_state" in event and event["email_state"]:
+                print(f"DEBUG: App Event {i+1} email_state: {event['email_state']}")
+            
             if "report" in event and event["report"]:
                 # Update the response in real-time
                 full_response = event["report"]
+                print(f"DEBUG: App Event {i+1} report length: {len(full_response)}")
                 
                 # Check if this is an email request
                 if event.get("needs_email", False):
+                    print(f"DEBUG: App Event {i+1} - EMAIL REQUEST DETECTED")
+                    print(f"DEBUG: App Event {i+1} - email_state: {event.get('email_state', 'None')}")
+                    
                     # For email requests, show a confirmation message instead of the full report
                     email_confirmation = f"📧 **Email Report Generated!**\n\nYour report has been generated and sent to your email address. The report includes comprehensive analysis of your query: *{prompt}*\n\n✅ **Email Status**: Report sent successfully\n📊 **Report Length**: {len(full_response)} characters\n\n*You can continue chatting below for more queries.*"
                     response_placeholder.markdown(email_confirmation)
@@ -240,6 +257,8 @@ def stream_agent_response(prompt: str) -> str:
                     # For regular reports, show the full content
                     response_placeholder.markdown(full_response)
                 time.sleep(0.1)  # Small delay for better UX
+        
+        print(f"DEBUG: App workflow completed")
         
         # Save the final response
         metadata = {}
@@ -480,7 +499,7 @@ def main_app():
     
     with col4:
         if st.button("📧 Email Report", use_container_width=True):
-            sample_query = "Generate a market report and email it to me"
+            sample_query = "Generate a report and email it to me"
             st.session_state.sample_query = sample_query
             st.rerun()
     

@@ -139,6 +139,9 @@ class AuthManager:
         if db_service.user_exists(username):
             return False
         
+        if db_service.email_exists(email):
+            return False
+        
         return db_service.create_user(
             username=username,
             password_hash=self._hash_password(password),

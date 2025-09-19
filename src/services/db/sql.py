@@ -214,7 +214,17 @@ class DatabaseService:
                 })
                 return True
         except Exception as e:
-            print(f"Error creating user: {e}")
+            error_msg = str(e).lower()
+            if "unique" in error_msg and "username" in error_msg:
+                print(f"Error: Username '{username}' already exists")
+            elif "unique" in error_msg and "email" in error_msg:
+                print(f"Error: Email '{email}' is already registered")
+            elif "check" in error_msg and "username" in error_msg:
+                print(f"Error: Username cannot be empty")
+            elif "check" in error_msg and "email" in error_msg:
+                print(f"Error: Email cannot be empty")
+            else:
+                print(f"Error creating user: {e}")
             return False
     
     def get_user(self, username: str) -> Optional[Dict[str, Any]]:
@@ -326,6 +336,19 @@ class DatabaseService:
             print(f"Error checking if user exists: {e}")
             return False
 
+    def email_exists(self, email: str) -> bool:
+        """Check if a email exists in the database."""
+        try:
+            with self.engine.begin() as conn:
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM users WHERE email = :email
+                """), {"email": email})
+                
+                count = result.fetchone()[0]
+                return count > 0
+        except Exception as e:
+            print(f"Error checking if email exists: {e}")
+            return False
 
 # Global database service instance
 db_service = DatabaseService()
